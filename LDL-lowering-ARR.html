@@ -54,7 +54,7 @@ h1 em { font-style: italic; }
 
 .panel-head { margin: 0 0 3px; font-size: 13px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; }
 .panel-sub { font-size: 11px; color: var(--ink-3); font-family: var(--mono); margin-bottom: 10px; }
-.chart-wrap { position: relative; width: 100%; height: 300px; margin-bottom: 32px; }
+.chart-wrap { position: relative; width: 100%; height: 380px; margin-bottom: 32px; }
 
 .divider { border: none; border-top: 1px solid var(--rule); margin: 8px 0 24px; }
 
@@ -70,6 +70,7 @@ h1 em { font-style: italic; }
   <div class="masthead">
     <div>
       <div class="byline"><a href="https://anishkokamd.substack.com">anishkokamd.substack.com</a></div>
+      <div class="byline" style="margin-top:3px;"><a href="https://twitter.com/anish_koka" style="color:var(--ink-3);">@anish_koka</a></div>
     </div>
   </div>
 
@@ -97,17 +98,17 @@ h1 em { font-style: italic; }
   </div>
 
   <p class="panel-head">CV / vascular mortality — absolute risk reduction</p>
-  <p class="panel-sub">Deaths prevented per 1,000 patients treated over trial duration · zero line = no benefit</p>
+  <p class="panel-sub">CHD, CV, or all-cause mortality depending on trial · zero line = no benefit · solid bubble = formally significant</p>
   <div class="chart-wrap"><canvas id="cvChart"></canvas></div>
 
   <hr class="divider">
 
   <p class="panel-head">All-cause mortality — absolute risk reduction</p>
-  <p class="panel-sub">More trials report all-cause mortality · same axes for direct comparison</p>
+  <p class="panel-sub">All-cause mortality where available · same axes for direct comparison · solid bubble = formally significant</p>
   <div class="chart-wrap"><canvas id="acChart"></canvas></div>
 
   <div class="source-note">
-    ARR = (control arm mortality rate − treatment arm mortality rate) × 1,000, calculated from published event counts and follow-up duration. Bubble size ∝ trial enrollment. Dashed regression line is OLS. Vertical dashed line = VESALIUS median baseline LDL (122 mg/dL ★). VESALIUS mortality is exploratory — outside the prespecified hierarchical testing plan (CHD death alone was non-significant, breaking the chain). <span class="tag">VESALIUS</span> <span class="tag-fourier">FOURIER: CV mort ARR ~0.8/1,000 at median 2.2yr</span><br>
+    ARR = (control arm mortality rate − treatment arm mortality rate) × 1,000, from published event counts and follow-up. Mortality endpoint varies by trial — CHD death (4S, WOSCOPS), vascular/CV death (CARE, LIPID, HPS, FOURIER), or all-cause (ODYSSEY Outcomes, VESALIUS). Bubble size ∝ enrollment. Dashed regression line is OLS. Vertical dashed line = VESALIUS median baseline LDL (122 mg/dL ★). VESALIUS mortality is exploratory — hierarchy broke at CHD death alone (p=0.39). <span class="tag">VESALIUS exploratory</span> <span class="tag-fourier">FOURIER: CV mort ARR ~0.8/1,000</span><br>
     Sources: CTT Collaboration Lancet 2005/2010/2015 · FOURIER NEJM 2017 · ODYSSEY Outcomes NEJM 2018 · VESALIUS NEJM 2026
   </div>
 
@@ -122,34 +123,34 @@ const VES_LDL = 122;
 
 
 const trials = [
-  {n:'4S',               x:188, cv:29.0, ac:30.0, cvSig:true,  acSig:true,  era:'early',   wt:22, note:'Post-MI, no prior statin, high baseline LDL — simvastatin vs placebo'},
-  {n:'WOSCOPS',          x:192, cv:10.0, ac: 8.0, cvSig:true,  acSig:false, era:'early',   wt:14, note:'Middle-aged men with hypercholesterolemia, no CVD — primary prevention, no background statin'},
-  {n:'CARE',             x:139, cv: 9.0, ac: 4.0, cvSig:true,  acSig:false, era:'early',   wt:12, note:'Post-MI with average LDL, no background statin — pravastatin vs placebo'},
-  {n:'LIPID',            x:150, cv:15.0, ac:14.0, cvSig:true,  acSig:true,  era:'early',   wt:18, note:'Post-MI or unstable angina, broad LDL range, no background statin — pravastatin vs placebo'},
-  {n:'AFCAPS',           x:150, cv: 1.0, ac: 0.0, cvSig:false, acSig:false, era:'early',   wt:10, note:'Average-risk primary prevention, no CVD, no background statin — lovastatin vs placebo'},
-  {n:'Post-CABG',        x:156, cv: 3.0, ac: 2.0, cvSig:false, acSig:false, era:'early',   wt: 8, note:'Post-coronary bypass surgery, high LDL, no background statin — intensive vs moderate lovastatin'},
-  {n:'HPS',              x:131, cv:12.0, ac:13.0, cvSig:true,  acSig:true,  era:'mid',     wt:24, note:'High-risk mixed population (CAD, diabetes, PVD), some on background statin — simvastatin 40mg vs placebo'},
-  {n:'PROSPER',          x:147, cv: 7.0, ac: 2.0, cvSig:true,  acSig:false, era:'mid',     wt:12, note:'Elderly patients (70–82 yr) with CVD or CVD risk factors — pravastatin vs placebo'},
-  {n:'ASCOT-LLA',        x:133, cv: 5.0, ac: 4.0, cvSig:false, acSig:false, era:'mid',     wt:13, note:'Hypertensive patients with ≥3 CV risk factors, no prior CVD — stopped early, mortality nominally significant but trial truncated'},
-  {n:'CARDS',            x:118, cv:10.0, ac:10.0, cvSig:false, acSig:false, era:'mid',     wt: 9, note:'Type 2 diabetes, no prior CVD, average LDL — primary prevention, atorvastatin 10mg vs placebo'},
-  {n:'TNT',              x:130, cv: 4.0, ac: 3.0, cvSig:false, acSig:false, era:'mid',     wt:18, note:'Stable CAD on background statin — intensive (80mg) vs moderate (10mg) atorvastatin, mortality non-significant'},
-  {n:'IDEAL',            x:122, cv: 2.0, ac: 1.0, cvSig:false, acSig:false, era:'mid',     wt:16, note:'Post-MI on background statin — high-dose atorvastatin vs usual-dose simvastatin, mortality non-significant'},
-  {n:'PROVE-IT',         x:106, cv: 5.0, ac: 4.0, cvSig:false, acSig:false, era:'mid',     wt:10, note:'Recent ACS (within 10 days), some on background statin — atorvastatin 80mg vs pravastatin 40mg, mortality non-significant'},
-  {n:'JUPITER',          x:108, cv: 5.0, ac: 5.0, cvSig:false, acSig:false, era:'mid',     wt:16, note:'No CVD, normal LDL but elevated hsCRP — stopped early, mortality nominally reduced but trial truncation inflates estimates'},
-  {n:'SEARCH',           x:111, cv: 1.0, ac: 0.5, cvSig:false, acSig:false, era:'mid',     wt:16, note:'Post-MI on background statin — simvastatin 80mg vs 20mg, no mortality benefit'},
-  {n:'SPARCL',           x:133, cv: 4.0, ac: 5.0, cvSig:false, acSig:false, era:'mid',     wt:10, note:'Recent stroke or TIA, no coronary disease — atorvastatin 80mg vs placebo, mortality non-significant'},
-  {n:'IMPROVE-IT',       x: 93, cv: 4.0, ac: 1.0, cvSig:false, acSig:false, era:'mid',     wt:18, note:'Post-ACS on background statin, LDL already at goal — ezetimibe+statin vs statin alone, all-cause mortality non-significant'},
-  {n:'HOPE-3',           x:128, cv: 3.0, ac: 3.0, cvSig:false, acSig:false, era:'modern',  wt:14, note:'Intermediate-risk patients, no CVD — primary prevention, rosuvastatin 10mg vs placebo, mortality non-significant'},
-  {n:'FOURIER',          x: 92, cv: 0.8, ac:-0.3, cvSig:false, acSig:false, era:'modern',  wt:24, note:'Established ASCVD, all on background statin, LDL ~92 mg/dL — evolocumab vs placebo, 2.2yr median f/u, no mortality benefit'},
-  {n:'ODYSSEY Outcomes', x: 87, cv: 2.5, ac: 5.5, cvSig:false, acSig:true,  era:'modern',  wt:22, note:'Recent ACS (1–12 months), all on high-intensity statin, LDL ~87 mg/dL — alirocumab vs placebo, all-cause mortality reduced'},
-  {n:'VESALIUS',         x:122, cv: 8.0, ac:18.0, cvSig:false, acSig:false, era:'vesalius', wt:18, note:'No prior MI or stroke, atherosclerosis or high-risk diabetes, on background statin — evolocumab vs placebo · EXPLORATORY: outside hierarchical testing plan'},
+  {n:'4S',               x:188, cv:29.0, ac:30.0, cvSig:true,  acSig:true,  era:'early',   wt:22, ldlDrop:72,  note:'Post-MI, no prior statin, high baseline LDL — simvastatin vs placebo'},
+  {n:'WOSCOPS',          x:192, cv:10.0, ac: 8.0, cvSig:true,  acSig:false, era:'early',   wt:14, ldlDrop:38,  note:'Middle-aged men with hypercholesterolemia, no CVD — primary prevention, no background statin'},
+  {n:'CARE',             x:139, cv: 9.0, ac: 4.0, cvSig:true,  acSig:false, era:'early',   wt:12, ldlDrop:28,  note:'Post-MI with average LDL, no background statin — pravastatin vs placebo'},
+  {n:'LIPID',            x:150, cv:15.0, ac:14.0, cvSig:true,  acSig:true,  era:'early',   wt:18, ldlDrop:25,  note:'Post-MI or unstable angina, broad LDL range, no background statin — pravastatin vs placebo'},
+  {n:'AFCAPS',           x:150, cv: 1.0, ac: 0.0, cvSig:false, acSig:false, era:'early',   wt:10, ldlDrop:37,  note:'Average-risk primary prevention, no CVD, no background statin — lovastatin vs placebo'},
+  {n:'Post-CABG',        x:156, cv: 3.0, ac: 2.0, cvSig:false, acSig:false, era:'early',   wt: 8, ldlDrop:43,  note:'Post-coronary bypass surgery, high LDL, no background statin — intensive vs moderate lovastatin'},
+  {n:'HPS',              x:131, cv:12.0, ac:13.0, cvSig:true,  acSig:true,  era:'mid',     wt:24, ldlDrop:39,  note:'High-risk mixed population (CAD, diabetes, PVD), some on background statin — simvastatin 40mg vs placebo'},
+  {n:'PROSPER',          x:147, cv: 7.0, ac: 2.0, cvSig:true,  acSig:false, era:'mid',     wt:12, ldlDrop:34,  note:'Elderly patients (70–82 yr) with CVD or CVD risk factors — pravastatin vs placebo'},
+  {n:'ASCOT-LLA',        x:133, cv: 5.0, ac: 4.0, cvSig:false, acSig:false, era:'mid',     wt:13, ldlDrop:35,  note:'Hypertensive patients, no prior CVD — stopped early, mortality nominally significant but trial truncated'},
+  {n:'CARDS',            x:118, cv:10.0, ac:10.0, cvSig:false, acSig:false, era:'mid',     wt: 9, ldlDrop:40,  note:'Type 2 diabetes, no prior CVD — primary prevention, atorvastatin 10mg vs placebo'},
+  {n:'TNT',              x:130, cv: 4.0, ac: 3.0, cvSig:false, acSig:false, era:'mid',     wt:18, ldlDrop:24,  note:'Stable CAD on background statin — intensive (80mg) vs moderate (10mg) atorvastatin, mortality non-significant'},
+  {n:'IDEAL',            x:122, cv: 2.0, ac: 1.0, cvSig:false, acSig:false, era:'mid',     wt:16, ldlDrop:22,  note:'Post-MI on background statin — high-dose atorvastatin vs usual-dose simvastatin, mortality non-significant'},
+  {n:'PROVE-IT',         x:106, cv: 5.0, ac: 4.0, cvSig:false, acSig:false, era:'mid',     wt:10, ldlDrop:27,  note:'Recent ACS, some on background statin — atorvastatin 80mg vs pravastatin 40mg, mortality non-significant'},
+  {n:'JUPITER',          x:108, cv: 5.0, ac: 5.0, cvSig:false, acSig:false, era:'mid',     wt:16, ldlDrop:50,  note:'No CVD, normal LDL but elevated hsCRP — stopped early, mortality nominally reduced but truncation inflates estimates'},
+  {n:'SEARCH',           x:111, cv: 1.0, ac: 0.5, cvSig:false, acSig:false, era:'mid',     wt:16, ldlDrop:14,  note:'Post-MI on background statin — simvastatin 80mg vs 20mg, no mortality benefit'},
+  {n:'SPARCL',           x:133, cv: 4.0, ac: 5.0, cvSig:false, acSig:false, era:'mid',     wt:10, ldlDrop:53,  note:'Recent stroke or TIA, no coronary disease — atorvastatin 80mg vs placebo, mortality non-significant'},
+  {n:'IMPROVE-IT',       x: 93, cv: 4.0, ac: 1.0, cvSig:false, acSig:false, era:'mid',     wt:18, ldlDrop:16,  note:'Post-ACS on background statin — ezetimibe+statin vs statin alone, all-cause mortality non-significant'},
+  {n:'HOPE-3',           x:128, cv: 3.0, ac: 3.0, cvSig:false, acSig:false, era:'modern',  wt:14, ldlDrop:34,  note:'Intermediate-risk, no CVD — primary prevention, rosuvastatin 10mg vs placebo, mortality non-significant'},
+  {n:'FOURIER',          x: 92, cv: 0.8, ac:-0.3, cvSig:false, acSig:false, era:'modern',  wt:24, ldlDrop:56,  note:'Established ASCVD, all on background statin — evolocumab vs placebo, 2.2yr median f/u, no mortality benefit'},
+  {n:'ODYSSEY',          x: 87, cv: 2.5, ac: 5.5, cvSig:false, acSig:true,  era:'modern',  wt:22, ldlDrop:55,  note:'Recent ACS, all on high-intensity statin — alirocumab vs placebo, all-cause mortality reduced'},
+  {n:'VESALIUS',         x:122, cv: 8.0, ac:18.0, cvSig:false, acSig:false, era:'vesalius', wt:18, ldlDrop:63,  note:'No prior MI or stroke, atherosclerosis or high-risk diabetes, on background statin — evolocumab vs placebo · EXPLORATORY: outside hierarchical testing plan'},
 ];
 
 function ols(pts) {
   const n=pts.length, mx=pts.reduce((s,p)=>s+p.x,0)/n, my=pts.reduce((s,p)=>s+p.y,0)/n;
   const num=pts.reduce((s,p)=>s+(p.x-mx)*(p.y-my),0), den=pts.reduce((s,p)=>s+(p.x-mx)**2,0);
   const sl=num/den, ic=my-sl*mx;
-  return [{x:75,y:ic+sl*75},{x:205,y:ic+sl*205}];
+  return [{x:70,y:ic+sl*70},{x:210,y:ic+sl*210}];
 }
 
 function buildDs(yKey) {
@@ -159,7 +160,7 @@ function buildDs(yKey) {
   const sigHollow  = { early:[], mid:[], modern:[], vesalius:[] };
 
   trials.forEach(t => {
-    const pt = {x:t.x, y:t[yKey], r:t.wt*0.4, label:t.n, note:t.note, sig:t[sigKey]};
+    const pt = {x:t.x, y:t[yKey], r:t.wt*0.28, label:t.n, note:t.note, sig:t[sigKey], ldlDrop:t.ldlDrop};
     if (t[sigKey]) sigSolid[t.era].push(pt);
     else           sigHollow[t.era].push(pt);
   });
@@ -194,8 +195,8 @@ function buildDs(yKey) {
 
   const regPts = ols(trials.map(t=>({x:t.x,y:t[yKey]})));
   ds.push({label:'__reg__',type:'line',data:regPts,borderColor:'rgba(26,26,24,0.35)',borderWidth:1.5,borderDash:[6,3],pointRadius:0,fill:false});
-  ds.push({label:'__zero__',type:'line',data:[{x:75,y:0},{x:205,y:0}],borderColor:'rgba(136,135,128,0.3)',borderWidth:1,borderDash:[2,4],pointRadius:0,fill:false});
-  ds.push({label:'__vl__',type:'line',data:[{x:VES_LDL,y:-5},{x:VES_LDL,y:38}],borderColor:'rgba(127,119,221,0.5)',borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false});
+  ds.push({label:'__zero__',type:'line',data:[{x:70,y:0},{x:210,y:0}],borderColor:'rgba(136,135,128,0.3)',borderWidth:1,borderDash:[2,4],pointRadius:0,fill:false});
+  ds.push({label:'__vl__',type:'line',data:[{x:VES_LDL,y:-6},{x:VES_LDL,y:42}],borderColor:'rgba(127,119,221,0.5)',borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false});
   return ds;
 }
 
@@ -215,37 +216,75 @@ const ttCfg = {
         d.note || '',
         '',
         `Baseline LDL: ${d.x} mg/dL`,
+        `LDL reduction (active arm): ${d.ldlDrop} mg/dL`,
         `Mortality ARR: ${d.y.toFixed(1)} per 1,000 pts`,
       ];
     }
   }
 };
 
-function makeChart(id,yKey,yMin,yMax){
-  return new Chart(document.getElementById(id).getContext('2d'),{
-    type:'bubble',
-    data:{datasets:buildDs(yKey)},
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:ttCfg},
-      scales:{
-        x:{min:75,max:205,
-          title:{display:true,text:'Baseline LDL-C (mg/dL)',font:{size:11,family:"'DM Mono',monospace"},color:TICK},
-          grid:{color:GRID},
-          ticks:{color:TICK,font:{size:10},callback:v=>v===VES_LDL?v+'★':v}
+function makeChart(id, yKey, yMin, yMax) {
+  const sigKey = yKey === 'cv' ? 'cvSig' : 'acSig';
+
+  const LABEL_THESE = new Set(['4S','WOSCOPS','LIPID','ODYSSEY','FOURIER','VESALIUS']);
+
+  const labelPlugin = {
+    id: 'bubbleLabels',
+    afterDatasetsDraw(chart) {
+      const ctx = chart.ctx;
+      ctx.save();
+      ctx.font = '500 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+
+      chart.data.datasets.forEach((ds, di) => {
+        if (ds.label && ds.label.startsWith('__')) return;
+        const meta = chart.getDatasetMeta(di);
+        ds.data.forEach((d, i) => {
+          if (!d.label || !LABEL_THESE.has(d.label)) return;
+          const pt = meta.data[i];
+          if (!pt) return;
+          const {x, y} = pt.getCenterPoint();
+          const r = pt.options ? pt.options.radius : 8;
+          const col = C[d.label === 'VESALIUS' ? 'vesalius' :
+                        ['4S','WOSCOPS','LIPID'].includes(d.label) ? 'early' :
+                        ['FOURIER','ODYSSEY'].includes(d.label) ? 'modern' : 'mid'];
+          ctx.fillStyle = col || '#444';
+          ctx.fillText(d.label, x, y - r - 2);
+        });
+      });
+      ctx.restore();
+    }
+  };
+
+  return new Chart(document.getElementById(id).getContext('2d'), {
+    type: 'bubble',
+    data: { datasets: buildDs(yKey) },
+    plugins: [labelPlugin],
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: ttCfg },
+      scales: {
+        x: {
+          min: 70, max: 210,
+          title: { display: true, text: 'Baseline LDL-C (mg/dL)', font: { size: 11, family: 'monospace' }, color: TICK },
+          grid: { color: GRID },
+          ticks: { color: TICK, font: { size: 10 }, callback: v => v === VES_LDL ? v + '★' : v }
         },
-        y:{min:yMin,max:yMax,
-          title:{display:true,text:'ARR — deaths prevented per 1,000 patients',font:{size:10,family:"'DM Mono',monospace"},color:TICK},
-          grid:{color:GRID},
-          ticks:{color:TICK,font:{size:10},callback:v=>v.toFixed(0)}
+        y: {
+          min: yMin, max: yMax,
+          title: { display: true, text: 'Mortality ARR — CHD, CV, or all-cause depending on trial (per 1,000 pts)', font: { size: 10, family: 'monospace' }, color: TICK },
+          grid: { color: GRID },
+          ticks: { color: TICK, font: { size: 10 }, callback: v => v.toFixed(0) }
         }
       }
     }
   });
 }
 
-makeChart('cvChart','cv',-4,38);
-makeChart('acChart','ac',-4,38);
+makeChart('cvChart','cv',-6, 42);
+makeChart('acChart','ac',-6, 42);
 </script>
 </body>
 </html>
